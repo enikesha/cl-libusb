@@ -123,7 +123,7 @@
   (:report
    (lambda (condition stream)
      (write-string (slot-value condition 'text)
-		   stream))))
+                   stream))))
 
 ;;; Core
 (defvar *libusb-initialized* nil
@@ -165,7 +165,7 @@
   "Return a list of busses."
   (ensure-libusb-initialized)
   (loop with bus = (usb-get-busses*)
-       
+
      until (null-pointer-p bus)
      collect bus
 
@@ -187,7 +187,7 @@
   those busses."
   (if (listp bus-or-list)
       (loop for bus in bus-or-list
-	 nconcing (usb-get-devices* bus))
+         nconcing (usb-get-devices* bus))
       (usb-get-devices* bus-or-list)))
 
 (defun usb-get-devices-by-ids (vendor-id product-id)
@@ -196,10 +196,10 @@
   value. Thus (usb-get-devices-by-ids nil nil) is equivalent
   to (usb-get-devices)."
   (flet ((ids-match (device)
-	   (and (or (null vendor-id)
-		    (= vendor-id (usb-get-vendor-id device)))
-		(or (null product-id)
-		    (= product-id (usb-get-product-id device))))))
+           (and (or (null vendor-id)
+                    (= vendor-id (usb-get-vendor-id device)))
+                (or (null product-id)
+                    (= product-id (usb-get-product-id device))))))
     (delete-if-not #'ids-match (usb-get-devices))))
 
 
@@ -211,37 +211,37 @@
 (defun usb-get-configurations (device)
   "Returns a list of usb configurations for the given device."
   (let* ((descriptor (usb-device-get-descriptor device))
-	 (total-configurations
-	  (foreign-slot-value descriptor 'device-descriptor
-			      'number-of-configurations)))
+         (total-configurations
+          (foreign-slot-value descriptor 'device-descriptor
+                              'number-of-configurations)))
     (loop for index from 0 below total-configurations
        collect (inc-pointer (foreign-slot-value device
-						'device
-						'configuration)
-			    index))))
+                                                'device
+                                                'configuration)
+                            index))))
 
 (defun usb-configuration-get-value (configuration)
   "Returns the configuration value of the given configuration."
   (foreign-slot-value configuration 'configuration
-		      'configuration-value))
+                      'configuration-value))
 
 (defun usb-get-configuration-by-value (device value)
   "Returns a configuration which has the given configuration value."
   (find value (usb-get-configurations device)
-	:test #'(lambda (val config)
-		  (= val (usb-configuration-get-value config)))))
+        :test #'(lambda (val config)
+                  (= val (usb-configuration-get-value config)))))
 
 (defun usb-configuration-get-interfaces (configuration)
   "Returns all the interfaces from the given configuration."
   (with-foreign-slots ((number-of-interfaces interface)
-		       configuration configuration)
+                       configuration configuration)
     (loop for index from 0 below number-of-interfaces
        collect (inc-pointer interface index))))
 
 (defun usb-interface-get-settings (interface)
   "Returns all the possible settings from a given interface."
   (with-foreign-slots ((number-of-settings setting)
-		       interface interface)
+                       interface interface)
     (loop for index from 0 below number-of-settings
        collect (inc-pointer setting index))))
 
@@ -256,7 +256,7 @@
 (defun usb-interface-setting-get-endpoints (setting)
   "Return a list of endpoints for the given interface setting."
   (with-foreign-slots ((number-of-endpoints endpoint-descriptor)
-		       setting setting)
+                       setting setting)
     (loop for index from 0 below number-of-endpoints
        collect (inc-pointer endpoint-descriptor index))))
 
@@ -269,7 +269,7 @@
   :control, :isosynchronous, :bulk or :interrupt."
   (case
       (logand (foreign-slot-value endpoint 'endpoint-descriptor 'attributes)
-	      #x03)
+              #x03)
     (0 :control)
     (1 :isosynchronous)
     (2 :bulk)
@@ -282,8 +282,8 @@
     (setf endpoint (usb-endpoint-get-address endpoint)))
   (unless (zerop (usb-clear-halt* handle endpoint))
     (error 'libusb-error
-	   :text (format nil "Error clearing halt status on endpoint with address 0x~X."
-			 endpoint))))
+           :text (format nil "Error clearing halt status on endpoint with address 0x~X."
+                         endpoint))))
 
 (defun usb-reset (handle)
   "Resets the specified device by sending a RESET down the port it is
@@ -345,9 +345,9 @@
   symbol can be :MANUFACTURER, :PRODUCT or :SERIAL-NUMBER."
   (let ((descriptor (usb-device-get-descriptor device)))
     (foreign-slot-value descriptor
-			'device-descriptor
-			(intern (concatenate 'string "INDEX-" (string string-symbol))
-				:libusb-ffi))))
+                        'device-descriptor
+                        (intern (concatenate 'string "INDEX-" (string string-symbol))
+                                :libusb-ffi))))
 
 (defun usb-get-string (device-handle index &optional language-id)
   "Returns the string descriptor specified by index and langid from a
@@ -358,17 +358,17 @@
   bytes returned."
   (let (bytes-read string)
     (setf string
-	  (if language-id
-	      (with-foreign-pointer-as-string ((buffer buffer-size) 128 :encoding :utf-16)
-		(setf bytes-read
-		      (usb-get-string* device-handle index language-id buffer buffer-size)))
-	      (with-foreign-pointer-as-string ((buffer buffer-size) 128 :encoding :ascii)
-		(setf bytes-read
-		      (usb-get-string-simple* device-handle index buffer buffer-size)))))
+          (if language-id
+              (with-foreign-pointer-as-string ((buffer buffer-size) 128 :encoding :utf-16)
+                (setf bytes-read
+                      (usb-get-string* device-handle index language-id buffer buffer-size)))
+              (with-foreign-pointer-as-string ((buffer buffer-size) 128 :encoding :ascii)
+                (setf bytes-read
+                      (usb-get-string-simple* device-handle index buffer buffer-size)))))
     (if (< bytes-read 0)
-	(error 'libusb-error :text (format nil "Error reading string at index ~D~@[ with language id ~D~]."
-					   index language-id))
-	string)))
+        (error 'libusb-error :text (format nil "Error reading string at index ~D~@[ with language id ~D~]."
+                                           index language-id))
+        string)))
 
 
 ;;; Bulk transfers
@@ -379,30 +379,36 @@
   bytes written."
   (unless (integerp endpoint)
     (setf endpoint (usb-endpoint-get-address endpoint)))
-  (let* ((bytes-written
-	  (usb-bulk-write* handle endpoint
-			   (grid::foreign-pointer buffer)
-			   (grid:dim0 buffer) timeout)))
+  (let ((bytes-written
+         (usb-bulk-write* handle endpoint
+                          (static-vectors:static-vector-pointer buffer)
+                          (length buffer) timeout)))
     (if (< bytes-written 0)
-	(error 'libusb-error :text "Bulk write failed.")
-	bytes-written)))
-      
+        (error 'libusb-error :text "Bulk write failed.")
+        bytes-written)))
+
 (defun usb-bulk-read (handle endpoint bytes-to-read timeout)
   "Perform a bulk read request to the endpoint, which can be specified
   by its address or pointer to the endpoint. Returns the buffer of
   bytes read, which is of type vector-unsigned-byte-8."
   (unless (integerp endpoint)
     (setf endpoint (usb-endpoint-get-address endpoint)))
-  (let* ((buffer (grid:make-foreign-array
-		  '(unsigned-byte 8)
-		  :dimensions bytes-to-read))
-	 (bytes-read
-	  (usb-bulk-read* handle endpoint
-			  (grid::foreign-pointer buffer)
-			  bytes-to-read timeout)))
-    (if (< bytes-read 0)
-	(error 'libusb-error :text "Bulk read failed.")
-	(grid:slice buffer `((:range 0 ,(- bytes-read 1)))))))
+  (let* ((buffer (static-vectors:make-static-vector bytes-to-read))
+         (bytes-read
+          (usb-bulk-read* handle endpoint
+                          (static-vectors:static-vector-pointer buffer)
+                          bytes-to-read timeout)))
+    (when (< bytes-read 0)
+      (static-vectors:free-static-vector buffer)
+      (error 'libusb-error :text "Bulk read failed."))
+    (unless (= bytes-read bytes-to-read)
+      (let ((result-buffer (static-vectors:make-static-vector
+                            bytes-read
+                            :initial-contents (subseq buffer 0 bytes-read))))
+        (static-vectors:free-static-vector buffer)
+        (setf buffer result-buffer)))
+    (tg:finalize buffer #'(lambda () (static-vectors:free-static-vector buffer)))
+    buffer))
 
 ;;; Interrupt transfers
 (defun usb-interrupt-write (handle endpoint buffer timeout)
@@ -412,14 +418,13 @@
   bytes written."
   (unless (integerp endpoint)
     (setf endpoint (usb-endpoint-get-address endpoint)))
-  (let* ((bytes-to-write (grid:dim0 buffer))
-	 (bytes-written
-	  (usb-interrupt-write* handle endpoint
-				(grid::foreign-pointer buffer)
-				bytes-to-write timeout)))
+  (let ((bytes-written
+         (usb-interrupt-write* handle endpoint
+                               (static-vectors:static-vector-pointer buffer)
+                               (length buffer) timeout)))
     (if (< bytes-written 0)
-      (error 'libusb-error :text "Interrupt write failed.")
-      bytes-written)))
+        (error 'libusb-error :text "Interrupt write failed.")
+        bytes-written)))
 
 (defun usb-interrupt-read (handle endpoint bytes-to-read timeout)
   "Perform an interrupt read request to the endpoint, which can be
@@ -427,27 +432,31 @@
   buffer of bytes read, which is of type vector-unsigned-byte-8."
   (unless (integerp endpoint)
     (setf endpoint (usb-endpoint-get-address endpoint)))
-  (let* ((buffer (grid:make-foreign-array
-		 '(unsigned-byte 8)
-		 :dimensions bytes-to-read))
-	 (bytes-read
-	  (usb-interrupt-read* handle endpoint
-			       (grid::foreign-pointer buffer)
-			       bytes-to-read timeout)))
-    (if (< bytes-read 0)
-	(error 'libusb-error :text "Interrupt read failed.")
-	(grid:slice buffer `((:range 0 ,(- bytes-read 1)))))))
+  (let* ((buffer (static-vectors:make-static-vector bytes-to-read))
+         (bytes-read
+          (usb-interrupt-read* handle endpoint
+                               (static-vectors:static-vector-pointer buffer)
+                               bytes-to-read timeout)))
+    (when (< bytes-read 0)
+      (static-vectors:free-static-vector buffer)
+      (error 'libusb-error :text "Interrupt read failed."))
+    (unless (= bytes-read bytes-to-read)
+      (let ((result-buffer (static-vectors:make-static-vector
+                            bytes-read
+                            :initial-contents (subseq buffer 0 bytes-read))))
+        (static-vectors:free-static-vector buffer)
+        (setf buffer result-buffer)))
+    (tg:finalize buffer #'(lambda () (static-vectors:free-static-vector buffer)))
+    buffer))
 
 (defun usb-control-msg (handle requesttype request value index buffer timeout)
-  (let* ((bytes-to-write (grid:dim0 buffer))
-         (bytes-written
-          (usb-control-msg* handle requesttype request value index
-                            (grid::foreign-pointer buffer)
-                            bytes-to-write timeout)))
+  (let ((bytes-written
+         (usb-control-msg* handle requesttype request value index
+                           (static-vectors:static-vector-pointer buffer)
+                           (length buffer) timeout)))
     (if (< bytes-written 0)
         (error 'libusb-error :text "Control message failed.")
         bytes-written)))
-    
 
 (defun endpoint-in-p (endpoint)
   "Check if an endpoint is an in endpoint (and thus can be read from)."
